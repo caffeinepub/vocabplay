@@ -12,18 +12,23 @@ export function parseVocabList(text: string): VocabEntry[] {
     let match = line.match(/^(.+?)\s*[-\u2013\u2014]\s*(.+)$/);
     if (match) {
       entries.push({ word: match[1].trim(), definition: match[2].trim() });
-    } else {
-      // Try: word: definition
-      match = line.match(/^(.+?):\s*(.+)$/);
-      if (match) {
-        entries.push({ word: match[1].trim(), definition: match[2].trim() });
-      } else {
-        // Try: word = definition
-        match = line.match(/^(.+?)=\s*(.+)$/);
-        if (match) {
-          entries.push({ word: match[1].trim(), definition: match[2].trim() });
-        }
-      }
+      continue;
+    }
+    // Try: word: definition
+    match = line.match(/^(.+?):\s*(.+)$/);
+    if (match) {
+      entries.push({ word: match[1].trim(), definition: match[2].trim() });
+      continue;
+    }
+    // Try: word = definition
+    match = line.match(/^(.+?)=\s*(.+)$/);
+    if (match) {
+      entries.push({ word: match[1].trim(), definition: match[2].trim() });
+      continue;
+    }
+    // Plain word (no definition)
+    if (line.length > 0) {
+      entries.push({ word: line, definition: "" });
     }
   }
 

@@ -49,7 +49,6 @@ export function AudioSpellingGame({
   const current = shuffled[currentIndex];
   const progress = (currentIndex / shuffled.length) * 100;
 
-  // Auto-play word audio when the word changes
   useEffect(() => {
     const timeout = setTimeout(() => {
       speakWord(current.word);
@@ -90,7 +89,6 @@ export function AudioSpellingGame({
     } else {
       if (!muted) playWrong();
     }
-
     setTimeout(() => {
       if (currentIndex + 1 >= shuffled.length) {
         setFinished(true);
@@ -125,7 +123,6 @@ export function AudioSpellingGame({
     setFinished(false);
     setRecorded(false);
   };
-
   const scorePercent = Math.round((score / shuffled.length) * 100);
 
   if (finished) {
@@ -212,7 +209,6 @@ export function AudioSpellingGame({
           <SoundToggle muted={muted} onToggle={toggleMute} />
         </div>
       </header>
-
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         <AnimatePresence mode="wait">
           <motion.div
@@ -231,29 +227,26 @@ export function AudioSpellingGame({
                   Listen and spell the word
                 </p>
               </div>
-
               <motion.button
                 data-ocid="audio_spelling.replay_button"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => speakWord(current.word)}
-                className="mx-auto flex flex-col items-center gap-3 group"
+                className="flex flex-col items-center gap-2 group mx-auto"
               >
                 <div className="w-24 h-24 rounded-full bg-pink-100 border-2 border-pink-300 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
                   <Volume2 className="h-10 w-10 text-pink-600" />
                 </div>
-                <span className="text-sm font-semibold text-pink-600">
-                  🔁 Replay Word
+                <span className="text-xs font-semibold text-pink-600">
+                  Tap to hear again
                 </span>
               </motion.button>
-
               <p className="text-xs text-muted-foreground">
-                Word plays automatically — tap to hear again
+                Word plays automatically
               </p>
             </div>
           </motion.div>
         </AnimatePresence>
-
         <div className="space-y-3">
           <div className="flex gap-2">
             <Input
@@ -264,13 +257,7 @@ export function AudioSpellingGame({
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               disabled={!!feedback}
-              className={`flex-1 text-lg font-semibold h-12 ${
-                feedback === "correct"
-                  ? "border-success"
-                  : feedback === "wrong"
-                    ? "border-destructive"
-                    : ""
-              }`}
+              className={`flex-1 text-lg font-semibold h-12 ${feedback === "correct" ? "border-success" : feedback === "wrong" ? "border-destructive" : ""}`}
               autoFocus
             />
             <Button
@@ -282,7 +269,6 @@ export function AudioSpellingGame({
               Check
             </Button>
           </div>
-
           {!feedback && (
             <Button
               data-ocid="audio_spelling.reveal_button"
@@ -294,7 +280,6 @@ export function AudioSpellingGame({
               <Eye className="h-3.5 w-3.5" /> Reveal answer
             </Button>
           )}
-
           <AnimatePresence>
             {feedback && (
               <motion.div
@@ -308,7 +293,6 @@ export function AudioSpellingGame({
             )}
           </AnimatePresence>
         </div>
-
         <div className="text-center text-sm text-muted-foreground">
           Score: <span className="font-bold text-primary">{score}</span> /{" "}
           {currentIndex}

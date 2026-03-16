@@ -13,6 +13,7 @@ export const VocabEntry = IDL.Record({
   'definition' : IDL.Text,
 });
 export const VocabSet = IDL.Record({
+  'id' : IDL.Text,
   'name' : IDL.Text,
   'entries' : IDL.Vec(VocabEntry),
 });
@@ -54,6 +55,7 @@ export const idlInitArgs = [];
 export const idlFactory = ({ IDL }) => {
   const VocabEntry = IDL.Record({ 'word' : IDL.Text, 'definition' : IDL.Text });
   const VocabSet = IDL.Record({
+    'id' : IDL.Text,
     'name' : IDL.Text,
     'entries' : IDL.Vec(VocabEntry),
   });

@@ -20,7 +20,11 @@ export interface GameResult {
   'gameType' : string,
 }
 export interface VocabEntry { 'word' : string, 'definition' : string }
-export interface VocabSet { 'name' : string, 'entries' : Array<VocabEntry> }
+export interface VocabSet {
+  'id' : string,
+  'name' : string,
+  'entries' : Array<VocabEntry>,
+}
 export interface _SERVICE {
   'clearGameResults' : ActorMethod<[], undefined>,
   'createVocabSet' : ActorMethod<

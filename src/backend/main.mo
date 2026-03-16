@@ -1,10 +1,10 @@
 import Array "mo:core/Array";
-import List "mo:core/List";
-import Map "mo:core/Map";
 import Text "mo:core/Text";
-import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
+import Iter "mo:core/Iter";
 import Time "mo:core/Time";
+import Map "mo:core/Map";
+import List "mo:core/List";
 
 
 
@@ -15,6 +15,7 @@ actor {
   };
 
   type VocabSet = {
+    id : Text;
     name : Text;
     entries : [VocabEntry];
   };
@@ -36,14 +37,20 @@ actor {
     if (vocabSets.containsKey(id)) {
       Runtime.trap("Vocab set with this id already exists");
     };
-    vocabSets.add(id, { name; entries });
+    let vocabSet : VocabSet = { id; name; entries };
+    vocabSets.add(id, vocabSet);
   };
 
   public shared ({ caller }) func updateVocabSet(id : Text, entries : [VocabEntry]) : async () {
     switch (vocabSets.get(id)) {
       case (null) { Runtime.trap("Vocab set does not exist") };
       case (?existingSet) {
-        vocabSets.add(id, { name = existingSet.name; entries });
+        let updatedSet : VocabSet = {
+          id = existingSet.id;
+          name = existingSet.name;
+          entries;
+        };
+        vocabSets.add(id, updatedSet);
       };
     };
   };
@@ -55,15 +62,15 @@ actor {
     vocabSets.remove(id);
   };
 
-  public query ({ caller }) func listVocabSets() : async [(Text, Text)] {
-    vocabSets.entries().toArray().map(func((id, set)) { (id, set.name) });
-  };
-
   public query ({ caller }) func getVocabSet(id : Text) : async VocabSet {
     switch (vocabSets.get(id)) {
       case (null) { Runtime.trap("Vocab set does not exist") };
       case (?set) { set };
     };
+  };
+
+  public query ({ caller }) func listVocabSets() : async [(Text, Text)] {
+    vocabSets.entries().toArray().map(func((id, set)) { (id, set.name) });
   };
 
   public shared ({ caller }) func recordGameResult(studentName : Text, setId : Text, setName : Text, gameType : Text, score : Nat, total : Nat) : async () {

@@ -46,7 +46,7 @@ function GameWrapper({
     );
   }
 
-  if (view.type === "flashcards") {
+  if (view.type === "flashcards")
     return (
       <FlashcardsGame
         entries={entries}
@@ -55,8 +55,7 @@ function GameWrapper({
         onBack={onBack}
       />
     );
-  }
-  if (view.type === "quiz") {
+  if (view.type === "quiz")
     return (
       <MultipleChoiceGame
         entries={entries}
@@ -65,8 +64,7 @@ function GameWrapper({
         onBack={onBack}
       />
     );
-  }
-  if (view.type === "matching") {
+  if (view.type === "matching")
     return (
       <MatchingGame
         entries={entries}
@@ -75,8 +73,7 @@ function GameWrapper({
         onBack={onBack}
       />
     );
-  }
-  if (view.type === "spelling") {
+  if (view.type === "spelling")
     return (
       <SpellingBeeGame
         entries={entries}
@@ -85,8 +82,7 @@ function GameWrapper({
         onBack={onBack}
       />
     );
-  }
-  if (view.type === "audio-spelling") {
+  if (view.type === "audio-spelling")
     return (
       <AudioSpellingGame
         entries={entries}
@@ -95,7 +91,6 @@ function GameWrapper({
         onBack={onBack}
       />
     );
-  }
   return null;
 }
 
@@ -113,12 +108,18 @@ function GameSelectWrapper({
   onBack: () => void;
 }) {
   const { data: set } = useGetVocabSet(setId);
+  const entries = set?.entries ?? [];
+  const hasDefinitions = entries.some(
+    (e) => e.definition && e.definition.trim() !== "",
+  );
+
   return (
     <GameSelectPage
       setId={setId}
       setName={setName}
       studentName={studentName}
-      wordCount={set?.entries.length ?? 0}
+      wordCount={entries.length}
+      hasDefinitions={hasDefinitions}
       onSelectGame={
         onSelect as (
           g: "flashcards" | "quiz" | "matching" | "spelling" | "audio-spelling",
@@ -136,14 +137,11 @@ export default function App() {
   const [view, setView] = useState<View>({ type: "home" });
 
   const goHome = () => setView({ type: "home" });
-
   const goGameSelect = (setId: string, setName: string) =>
     setView({ type: "game-select", setId, setName });
-
   const goGame = (game: string, setId: string, setName: string) =>
     setView({ type: game as View["type"], setId, setName } as View);
 
-  // Teacher can access dashboard directly from name entry page
   if (view.type === "teacher") {
     return (
       <>

@@ -21,6 +21,7 @@ interface GameSelectPageProps {
   setId: string;
   setName: string;
   wordCount: number;
+  hasDefinitions: boolean;
   studentName?: string;
   onSelectGame: (game: GameType) => void;
   onBack: () => void;
@@ -38,6 +39,7 @@ const games = [
     iconColor: "text-cyan-600",
     bg: "bg-cyan-50",
     ocid: "game_select.flashcard_button",
+    requiresDefinitions: true,
   },
   {
     id: "quiz" as GameType,
@@ -50,6 +52,7 @@ const games = [
     iconColor: "text-green-600",
     bg: "bg-green-50",
     ocid: "game_select.quiz_button",
+    requiresDefinitions: true,
   },
   {
     id: "matching" as GameType,
@@ -62,11 +65,12 @@ const games = [
     iconColor: "text-violet-600",
     bg: "bg-violet-50",
     ocid: "game_select.matching_button",
+    requiresDefinitions: true,
   },
   {
     id: "spelling" as GameType,
     title: "Spelling Bee",
-    description: "Read the definition and type the correct spelling",
+    description: "Hear the word and type the correct spelling",
     emoji: "🐝",
     color: "from-orange-400/25 to-amber-400/25",
     border: "border-orange-300",
@@ -74,6 +78,7 @@ const games = [
     iconColor: "text-orange-600",
     bg: "bg-orange-50",
     ocid: "game_select.spelling_button",
+    requiresDefinitions: false,
   },
   {
     id: "audio-spelling" as GameType,
@@ -86,16 +91,22 @@ const games = [
     iconColor: "text-pink-600",
     bg: "bg-pink-50",
     ocid: "game_select.audio_spelling_button",
+    requiresDefinitions: true,
   },
 ];
 
 export function GameSelectPage({
   setName,
   wordCount,
+  hasDefinitions,
   studentName,
   onSelectGame,
   onBack,
 }: GameSelectPageProps) {
+  const visibleGames = hasDefinitions
+    ? games
+    : games.filter((g) => !g.requiresDefinitions);
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 backdrop-blur-sm bg-background/90 border-b border-border">
@@ -119,7 +130,6 @@ export function GameSelectPage({
           </div>
         </div>
       </header>
-
       <main className="max-w-3xl mx-auto px-4 py-10">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -146,9 +156,8 @@ export function GameSelectPage({
             </p>
           )}
         </motion.div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {games.map((game, i) => {
+          {visibleGames.map((game, i) => {
             const Icon = game.icon;
             const disabled = wordCount < 2;
             return (

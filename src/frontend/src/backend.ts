@@ -90,6 +90,7 @@ export class ExternalBlob {
     }
 }
 export interface VocabSet {
+    id: string;
     name: string;
     entries: Array<VocabEntry>;
 }

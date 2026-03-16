@@ -1,14 +1,19 @@
 import { PronounceButton } from "@/components/PronounceButton";
+import { SoundToggle } from "@/components/SoundToggle";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { VocabEntry } from "../backend.d";
+import { useRecordGameResult } from "../hooks/useQueries";
+import { useSoundToggle } from "../hooks/useSoundToggle";
 import { shuffleArray } from "../utils/parseVocab";
+import { playCorrect, playWrong } from "../utils/soundEffects";
 
 interface MultipleChoiceGameProps {
   entries: VocabEntry[];
+  setId: string;
   setName: string;
   onBack: () => void;
 }
@@ -28,17 +33,42 @@ function buildOptions(
 
 export function MultipleChoiceGame({
   entries,
+  setId,
   setName,
   onBack,
 }: MultipleChoiceGameProps) {
   const [shuffled] = useState(() => shuffleArray(entries));
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [options, setOptions] = useState(() =>
-    buildOptions(shuffleArray(entries), 0),
-  );
+  const [options, setOptions] = useState(() => buildOptions(shuffled, 0));
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [muted, toggleMute] = useSoundToggle();
+  const [recorded, setRecorded] = useState(false);
+  const recordMutation = useRecordGameResult();
+
+  useEffect(() => {
+    if (finished && !recorded) {
+      const studentName = sessionStorage.getItem("studentName") ?? "Unknown";
+      recordMutation.mutate({
+        studentName,
+        setId,
+        setName,
+        gameType: "Multiple Choice",
+        score: BigInt(score),
+        total: BigInt(shuffled.length),
+      });
+      setRecorded(true);
+    }
+  }, [
+    finished,
+    recorded,
+    score,
+    shuffled.length,
+    setId,
+    setName,
+    recordMutation.mutate,
+  ]);
 
   const buildNextOptions = useCallback(
     (idx: number) => buildOptions(shuffled, idx),
@@ -48,7 +78,12 @@ export function MultipleChoiceGame({
   const handleSelect = (optIdx: number) => {
     if (selected !== null) return;
     setSelected(optIdx);
-    if (options[optIdx].isCorrect) setScore((s) => s + 1);
+    if (options[optIdx].isCorrect) {
+      setScore((s) => s + 1);
+      playCorrect();
+    } else {
+      playWrong();
+    }
 
     setTimeout(() => {
       if (currentIndex + 1 >= shuffled.length) {
@@ -68,6 +103,7 @@ export function MultipleChoiceGame({
     setSelected(null);
     setScore(0);
     setFinished(false);
+    setRecorded(false);
   };
 
   const progress = (currentIndex / shuffled.length) * 100;
@@ -147,6 +183,7 @@ export function MultipleChoiceGame({
             </div>
             <Progress value={progress} className="h-2" />
           </div>
+          <SoundToggle muted={muted} onToggle={toggleMute} />
         </div>
       </header>
 

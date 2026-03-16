@@ -10,16 +10,31 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface GameResult {
+  'setName' : string,
+  'total' : bigint,
+  'studentName' : string,
+  'score' : bigint,
+  'setId' : string,
+  'timestamp' : bigint,
+  'gameType' : string,
+}
 export interface VocabEntry { 'word' : string, 'definition' : string }
 export interface VocabSet { 'name' : string, 'entries' : Array<VocabEntry> }
 export interface _SERVICE {
+  'clearGameResults' : ActorMethod<[], undefined>,
   'createVocabSet' : ActorMethod<
     [string, string, Array<VocabEntry>],
     undefined
   >,
   'deleteVocabSet' : ActorMethod<[string], undefined>,
   'getVocabSet' : ActorMethod<[string], VocabSet>,
+  'listGameResults' : ActorMethod<[], Array<GameResult>>,
   'listVocabSets' : ActorMethod<[], Array<[string, string]>>,
+  'recordGameResult' : ActorMethod<
+    [string, string, string, string, bigint, bigint],
+    undefined
+  >,
   'updateVocabSet' : ActorMethod<[string, Array<VocabEntry>], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;

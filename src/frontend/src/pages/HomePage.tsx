@@ -21,6 +21,7 @@ import {
 
 interface HomePageProps {
   onPlay: (id: string, name: string) => void;
+  onTeacher: () => void;
 }
 
 function SetCard({
@@ -115,7 +116,7 @@ function SetCard({
   );
 }
 
-export function HomePage({ onPlay }: HomePageProps) {
+export function HomePage({ onPlay, onTeacher }: HomePageProps) {
   const { data: sets, isLoading } = useListVocabSets();
   const deleteMutation = useDeleteVocabSet();
   const [modalOpen, setModalOpen] = useState(false);
@@ -148,14 +149,25 @@ export function HomePage({ onPlay }: HomePageProps) {
               Vocab<span className="text-primary">Play</span>
             </span>
           </div>
-          <Button
-            data-ocid="home.add_button"
-            onClick={handleAdd}
-            className="gap-2 font-semibold"
-          >
-            <Plus className="h-4 w-4" />
-            New Set
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              data-ocid="home.teacher_button"
+              variant="ghost"
+              size="sm"
+              onClick={onTeacher}
+              className="gap-1.5 text-sm text-muted-foreground hover:text-foreground font-semibold"
+            >
+              <GraduationCap className="h-4 w-4" /> Teacher
+            </Button>
+            <Button
+              data-ocid="home.add_button"
+              onClick={handleAdd}
+              className="gap-2 font-semibold"
+            >
+              <Plus className="h-4 w-4" />
+              New Set
+            </Button>
+          </div>
         </div>
       </header>
 

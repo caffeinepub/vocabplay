@@ -1,9 +1,8 @@
-import { PronounceButton } from "@/components/PronounceButton";
 import { SoundToggle } from "@/components/SoundToggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Eye, RotateCcw } from "lucide-react";
+import { ArrowLeft, Eye, RotateCcw, Volume2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { VocabEntry } from "../backend.d";
@@ -12,19 +11,28 @@ import { useSoundToggle } from "../hooks/useSoundToggle";
 import { shuffleArray } from "../utils/parseVocab";
 import { playCorrect, playWrong } from "../utils/soundEffects";
 
-interface SpellingBeeGameProps {
+interface AudioSpellingGameProps {
   entries: VocabEntry[];
   setId: string;
   setName: string;
   onBack: () => void;
 }
 
-export function SpellingBeeGame({
+function speakWord(word: string) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(word);
+  utterance.lang = "en-US";
+  utterance.rate = 0.85;
+  window.speechSynthesis.speak(utterance);
+}
+
+export function AudioSpellingGame({
   entries,
   setId,
   setName,
   onBack,
-}: SpellingBeeGameProps) {
+}: AudioSpellingGameProps) {
   const [shuffled] = useState(() => shuffleArray(entries));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [input, setInput] = useState("");
@@ -41,6 +49,14 @@ export function SpellingBeeGame({
   const current = shuffled[currentIndex];
   const progress = (currentIndex / shuffled.length) * 100;
 
+  // Auto-play word audio when the word changes
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      speakWord(current.word);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [current.word]);
+
   useEffect(() => {
     if (finished && !recorded) {
       const studentName = sessionStorage.getItem("studentName") ?? "Unknown";
@@ -48,7 +64,7 @@ export function SpellingBeeGame({
         studentName,
         setId,
         setName,
-        gameType: "Spelling Bee",
+        gameType: "Audio Spelling",
         score: BigInt(score),
         total: BigInt(shuffled.length),
       });
@@ -70,9 +86,9 @@ export function SpellingBeeGame({
     setFeedback(isCorrect ? "correct" : "wrong");
     if (isCorrect) {
       setScore((s) => s + 1);
-      playCorrect();
+      if (!muted) playCorrect();
     } else {
-      playWrong();
+      if (!muted) playWrong();
     }
 
     setTimeout(() => {
@@ -121,10 +137,10 @@ export function SpellingBeeGame({
           className="max-w-md w-full bg-card rounded-3xl border-2 border-border shadow-game p-8 text-center"
         >
           <div className="text-6xl mb-4">
-            {scorePercent >= 80 ? "🐝" : scorePercent >= 50 ? "👏" : "💪"}
+            {scorePercent >= 80 ? "🔊" : scorePercent >= 50 ? "👏" : "💪"}
           </div>
           <h2 className="font-display font-extrabold text-3xl mb-1">
-            Spelling Bee Done!
+            Audio Spelling Done!
           </h2>
           <p className="text-muted-foreground mb-6">{setName}</p>
           <div className="bg-primary/10 rounded-2xl p-6 mb-6">
@@ -137,14 +153,14 @@ export function SpellingBeeGame({
           </div>
           <div className="flex flex-col gap-3">
             <Button
-              data-ocid="results.replay_button"
+              data-ocid="audio_spelling_results.replay_button"
               onClick={handleRestart}
               className="w-full gap-2 font-semibold"
             >
               <RotateCcw className="h-4 w-4" /> Try Again
             </Button>
             <Button
-              data-ocid="results.back_button"
+              data-ocid="audio_spelling_results.back_button"
               variant="ghost"
               onClick={onBack}
               className="w-full gap-2"
@@ -186,7 +202,7 @@ export function SpellingBeeGame({
           </Button>
           <div className="flex-1">
             <div className="flex items-center justify-between text-sm mb-1">
-              <span className="font-semibold">🐝 Spelling Bee</span>
+              <span className="font-semibold">🔊 Audio Spelling</span>
               <span className="text-muted-foreground">
                 {currentIndex + 1} / {shuffled.length}
               </span>
@@ -206,24 +222,34 @@ export function SpellingBeeGame({
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="bg-card border-2 border-border rounded-3xl p-8 text-center shadow-game space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Definition
-              </p>
-              <p className="font-body text-xl md:text-2xl text-foreground leading-relaxed">
-                {current.definition}
-              </p>
-              <div className="pt-2 border-t border-border/50 flex flex-col items-center gap-2">
-                <PronounceButton
-                  word={current.word}
-                  size="default"
-                  data-ocid="spelling.pronounce_button"
-                  className="gap-2 px-5 py-2 rounded-full font-semibold text-sm"
-                />
-                <span className="text-xs text-muted-foreground">
-                  Tap to hear the word
-                </span>
+            <div className="bg-card border-2 border-border rounded-3xl p-8 text-center shadow-game space-y-6">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Audio Spelling
+                </p>
+                <p className="font-body text-lg text-muted-foreground">
+                  Listen and spell the word
+                </p>
               </div>
+
+              <motion.button
+                data-ocid="audio_spelling.replay_button"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => speakWord(current.word)}
+                className="mx-auto flex flex-col items-center gap-3 group"
+              >
+                <div className="w-24 h-24 rounded-full bg-pink-100 border-2 border-pink-300 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                  <Volume2 className="h-10 w-10 text-pink-600" />
+                </div>
+                <span className="text-sm font-semibold text-pink-600">
+                  🔁 Replay Word
+                </span>
+              </motion.button>
+
+              <p className="text-xs text-muted-foreground">
+                Word plays automatically — tap to hear again
+              </p>
             </div>
           </motion.div>
         </AnimatePresence>
@@ -232,8 +258,8 @@ export function SpellingBeeGame({
           <div className="flex gap-2">
             <Input
               ref={inputRef}
-              data-ocid="spelling.input"
-              placeholder="Type the word..."
+              data-ocid="audio_spelling.input"
+              placeholder="Type the word you heard..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
@@ -248,7 +274,7 @@ export function SpellingBeeGame({
               autoFocus
             />
             <Button
-              data-ocid="spelling.submit_button"
+              data-ocid="audio_spelling.submit_button"
               onClick={handleSubmit}
               disabled={!input.trim() || !!feedback}
               className="h-12 px-5 font-semibold"
@@ -259,7 +285,7 @@ export function SpellingBeeGame({
 
           {!feedback && (
             <Button
-              data-ocid="spelling.reveal_button"
+              data-ocid="audio_spelling.reveal_button"
               variant="ghost"
               size="sm"
               onClick={handleReveal}

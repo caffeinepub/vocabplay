@@ -97,15 +97,41 @@ export interface VocabEntry {
     word: string;
     definition: string;
 }
+export interface GameResult {
+    setName: string;
+    total: bigint;
+    studentName: string;
+    score: bigint;
+    setId: string;
+    timestamp: bigint;
+    gameType: string;
+}
 export interface backendInterface {
+    clearGameResults(): Promise<void>;
     createVocabSet(id: string, name: string, entries: Array<VocabEntry>): Promise<void>;
     deleteVocabSet(id: string): Promise<void>;
     getVocabSet(id: string): Promise<VocabSet>;
+    listGameResults(): Promise<Array<GameResult>>;
     listVocabSets(): Promise<Array<[string, string]>>;
+    recordGameResult(studentName: string, setId: string, setName: string, gameType: string, score: bigint, total: bigint): Promise<void>;
     updateVocabSet(id: string, entries: Array<VocabEntry>): Promise<void>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
+    async clearGameResults(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.clearGameResults();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.clearGameResults();
+            return result;
+        }
+    }
     async createVocabSet(arg0: string, arg1: string, arg2: Array<VocabEntry>): Promise<void> {
         if (this.processError) {
             try {
@@ -148,6 +174,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async listGameResults(): Promise<Array<GameResult>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.listGameResults();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.listGameResults();
+            return result;
+        }
+    }
     async listVocabSets(): Promise<Array<[string, string]>> {
         if (this.processError) {
             try {
@@ -159,6 +199,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.listVocabSets();
+            return result;
+        }
+    }
+    async recordGameResult(arg0: string, arg1: string, arg2: string, arg3: string, arg4: bigint, arg5: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.recordGameResult(arg0, arg1, arg2, arg3, arg4, arg5);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.recordGameResult(arg0, arg1, arg2, arg3, arg4, arg5);
             return result;
         }
     }

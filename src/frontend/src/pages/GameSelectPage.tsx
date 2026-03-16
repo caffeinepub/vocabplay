@@ -1,14 +1,27 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, HelpCircle, Layers, Mic, Shuffle } from "lucide-react";
+import {
+  ArrowLeft,
+  HelpCircle,
+  Layers,
+  Mic,
+  Shuffle,
+  Volume2,
+} from "lucide-react";
 import { motion } from "motion/react";
 
-type GameType = "flashcards" | "quiz" | "matching" | "spelling";
+type GameType =
+  | "flashcards"
+  | "quiz"
+  | "matching"
+  | "spelling"
+  | "audio-spelling";
 
 interface GameSelectPageProps {
   setId: string;
   setName: string;
   wordCount: number;
+  studentName?: string;
   onSelectGame: (game: GameType) => void;
   onBack: () => void;
 }
@@ -62,11 +75,24 @@ const games = [
     bg: "bg-orange-50",
     ocid: "game_select.spelling_button",
   },
+  {
+    id: "audio-spelling" as GameType,
+    title: "Audio Spelling",
+    description: "Listen to the word and type the correct spelling",
+    emoji: "🔊",
+    color: "from-pink-400/25 to-rose-400/25",
+    border: "border-pink-300",
+    icon: Volume2,
+    iconColor: "text-pink-600",
+    bg: "bg-pink-50",
+    ocid: "game_select.audio_spelling_button",
+  },
 ];
 
 export function GameSelectPage({
   setName,
   wordCount,
+  studentName,
   onSelectGame,
   onBack,
 }: GameSelectPageProps) {
@@ -103,12 +129,22 @@ export function GameSelectPage({
           <h2 className="font-display font-extrabold text-3xl md:text-4xl mb-2">
             Choose a <span className="text-primary">Game</span>
           </h2>
-          <p className="text-muted-foreground">
-            Pick how you want to study{" "}
-            <Badge variant="secondary" className="font-body">
-              {setName}
-            </Badge>
-          </p>
+          {studentName ? (
+            <p className="text-muted-foreground font-body">
+              Good luck,{" "}
+              <span className="font-semibold text-foreground">
+                {studentName}
+              </span>
+              ! 🎉
+            </p>
+          ) : (
+            <p className="text-muted-foreground">
+              Pick how you want to study{" "}
+              <Badge variant="secondary" className="font-body">
+                {setName}
+              </Badge>
+            </p>
+          )}
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

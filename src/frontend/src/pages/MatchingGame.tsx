@@ -1,12 +1,17 @@
+import { SoundToggle } from "@/components/SoundToggle";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { VocabEntry } from "../backend.d";
+import { useRecordGameResult } from "../hooks/useQueries";
+import { useSoundToggle } from "../hooks/useSoundToggle";
 import { shuffleArray } from "../utils/parseVocab";
+import { playCorrect, playWrong } from "../utils/soundEffects";
 
 interface MatchingGameProps {
   entries: VocabEntry[];
+  setId: string;
   setName: string;
   onBack: () => void;
 }
@@ -15,7 +20,12 @@ type Tile = { id: string; text: string; type: "word" | "def"; pairId: string };
 
 const BATCH_SIZE = 5;
 
-export function MatchingGame({ entries, setName, onBack }: MatchingGameProps) {
+export function MatchingGame({
+  entries,
+  setId,
+  setName,
+  onBack,
+}: MatchingGameProps) {
   const [allEntries] = useState(() => shuffleArray(entries));
   const [batchIndex, setBatchIndex] = useState(0);
   const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
@@ -24,6 +34,9 @@ export function MatchingGame({ entries, setName, onBack }: MatchingGameProps) {
   const [mistakes, setMistakes] = useState(0);
   const [totalMatched, setTotalMatched] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [muted, toggleMute] = useSoundToggle();
+  const [recorded, setRecorded] = useState(false);
+  const recordMutation = useRecordGameResult();
 
   const totalBatches = Math.ceil(allEntries.length / BATCH_SIZE);
   const currentBatch = allEntries.slice(
@@ -48,6 +61,29 @@ export function MatchingGame({ entries, setName, onBack }: MatchingGameProps) {
       })),
     ]);
   });
+
+  useEffect(() => {
+    if (finished && !recorded) {
+      const studentName = sessionStorage.getItem("studentName") ?? "Unknown";
+      recordMutation.mutate({
+        studentName,
+        setId,
+        setName,
+        gameType: "Matching",
+        score: BigInt(totalMatched),
+        total: BigInt(allEntries.length),
+      });
+      setRecorded(true);
+    }
+  }, [
+    finished,
+    recorded,
+    totalMatched,
+    allEntries.length,
+    setId,
+    setName,
+    recordMutation.mutate,
+  ]);
 
   const loadBatch = (bIdx: number) => {
     const batch = allEntries.slice(bIdx * BATCH_SIZE, (bIdx + 1) * BATCH_SIZE);
@@ -95,6 +131,7 @@ export function MatchingGame({ entries, setName, onBack }: MatchingGameProps) {
       setSelectedTile(null);
       const newTotal = totalMatched + 1;
       setTotalMatched(newTotal);
+      playCorrect();
 
       if (newMatched.size === currentBatch.length) {
         if (batchIndex + 1 >= totalBatches) {
@@ -109,6 +146,7 @@ export function MatchingGame({ entries, setName, onBack }: MatchingGameProps) {
     } else {
       setMistakes((m) => m + 1);
       setWrongPair([selectedTile.id, tile.id]);
+      playWrong();
       setTimeout(() => {
         setWrongPair(null);
         setSelectedTile(null);
@@ -124,6 +162,7 @@ export function MatchingGame({ entries, setName, onBack }: MatchingGameProps) {
     setMistakes(0);
     setTotalMatched(0);
     setFinished(false);
+    setRecorded(false);
     loadBatch(0);
   };
 
@@ -196,6 +235,7 @@ export function MatchingGame({ entries, setName, onBack }: MatchingGameProps) {
               </span>
             </div>
           </div>
+          <SoundToggle muted={muted} onToggle={toggleMute} />
         </div>
       </header>
 

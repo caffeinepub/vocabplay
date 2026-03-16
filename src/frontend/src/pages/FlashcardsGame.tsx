@@ -1,14 +1,19 @@
 import { PronounceButton } from "@/components/PronounceButton";
+import { SoundToggle } from "@/components/SoundToggle";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Check, RotateCcw, Trophy, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { VocabEntry } from "../backend.d";
+import { useRecordGameResult } from "../hooks/useQueries";
+import { useSoundToggle } from "../hooks/useSoundToggle";
 import { shuffleArray } from "../utils/parseVocab";
+import { playCorrect, playWrong } from "../utils/soundEffects";
 
 interface FlashcardsGameProps {
   entries: VocabEntry[];
+  setId: string;
   setName: string;
   onBack: () => void;
 }
@@ -115,6 +120,7 @@ function FlipCard({
 
 export function FlashcardsGame({
   entries,
+  setId,
   setName,
   onBack,
 }: FlashcardsGameProps) {
@@ -124,14 +130,42 @@ export function FlashcardsGame({
   const [unknown, setUnknown] = useState<Set<number>>(new Set());
   const [finished, setFinished] = useState(false);
   const [replayMode, setReplayMode] = useState(false);
+  const [muted, toggleMute] = useSoundToggle();
+  const [recorded, setRecorded] = useState(false);
+  const recordMutation = useRecordGameResult();
+
+  useEffect(() => {
+    if (finished && !recorded) {
+      const studentName = sessionStorage.getItem("studentName") ?? "Unknown";
+      recordMutation.mutate({
+        studentName,
+        setId,
+        setName,
+        gameType: "Flashcards",
+        score: BigInt(known.size),
+        total: BigInt(cards.length),
+      });
+      setRecorded(true);
+    }
+  }, [
+    finished,
+    recorded,
+    known.size,
+    cards.length,
+    setId,
+    setName,
+    recordMutation.mutate,
+  ]);
 
   const progress = (currentIndex / cards.length) * 100;
 
   const handleNext = (isKnown: boolean) => {
     if (isKnown) {
       setKnown((prev) => new Set([...prev, currentIndex]));
+      playCorrect();
     } else {
       setUnknown((prev) => new Set([...prev, currentIndex]));
+      playWrong();
     }
     if (currentIndex + 1 >= cards.length) {
       setFinished(true);
@@ -148,6 +182,7 @@ export function FlashcardsGame({
     setUnknown(new Set());
     setFinished(false);
     setReplayMode(true);
+    setRecorded(false);
   };
 
   const handleRestart = () => {
@@ -157,6 +192,7 @@ export function FlashcardsGame({
     setUnknown(new Set());
     setFinished(false);
     setReplayMode(false);
+    setRecorded(false);
   };
 
   if (finished) {
@@ -247,6 +283,7 @@ export function FlashcardsGame({
             </div>
             <Progress value={progress} className="h-2" />
           </div>
+          <SoundToggle muted={muted} onToggle={toggleMute} />
         </div>
       </header>
 

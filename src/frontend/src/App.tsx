@@ -2,26 +2,34 @@ import { Toaster } from "@/components/ui/sonner";
 import { useState } from "react";
 import type { VocabEntry } from "./backend.d";
 import { useGetVocabSet } from "./hooks/useQueries";
+import { AudioSpellingGame } from "./pages/AudioSpellingGame";
 import { FlashcardsGame } from "./pages/FlashcardsGame";
 import { GameSelectPage } from "./pages/GameSelectPage";
 import { HomePage } from "./pages/HomePage";
 import { MatchingGame } from "./pages/MatchingGame";
 import { MultipleChoiceGame } from "./pages/MultipleChoiceGame";
+import { NameEntryPage } from "./pages/NameEntryPage";
 import { SpellingBeeGame } from "./pages/SpellingBeeGame";
+import { TeacherDashboard } from "./pages/TeacherDashboard";
 
 type View =
   | { type: "home" }
+  | { type: "teacher" }
   | { type: "game-select"; setId: string; setName: string }
   | { type: "flashcards"; setId: string; setName: string }
   | { type: "quiz"; setId: string; setName: string }
   | { type: "matching"; setId: string; setName: string }
-  | { type: "spelling"; setId: string; setName: string };
+  | { type: "spelling"; setId: string; setName: string }
+  | { type: "audio-spelling"; setId: string; setName: string };
 
 function GameWrapper({
   view,
   onBack,
 }: {
-  view: Exclude<View, { type: "home" } | { type: "game-select" }>;
+  view: Exclude<
+    View,
+    { type: "home" } | { type: "teacher" } | { type: "game-select" }
+  >;
   onBack: () => void;
 }) {
   const { data: set, isLoading } = useGetVocabSet(view.setId);
@@ -42,6 +50,7 @@ function GameWrapper({
     return (
       <FlashcardsGame
         entries={entries}
+        setId={view.setId}
         setName={view.setName}
         onBack={onBack}
       />
@@ -51,6 +60,7 @@ function GameWrapper({
     return (
       <MultipleChoiceGame
         entries={entries}
+        setId={view.setId}
         setName={view.setName}
         onBack={onBack}
       />
@@ -58,13 +68,29 @@ function GameWrapper({
   }
   if (view.type === "matching") {
     return (
-      <MatchingGame entries={entries} setName={view.setName} onBack={onBack} />
+      <MatchingGame
+        entries={entries}
+        setId={view.setId}
+        setName={view.setName}
+        onBack={onBack}
+      />
     );
   }
   if (view.type === "spelling") {
     return (
       <SpellingBeeGame
         entries={entries}
+        setId={view.setId}
+        setName={view.setName}
+        onBack={onBack}
+      />
+    );
+  }
+  if (view.type === "audio-spelling") {
+    return (
+      <AudioSpellingGame
+        entries={entries}
+        setId={view.setId}
         setName={view.setName}
         onBack={onBack}
       />
@@ -76,11 +102,13 @@ function GameWrapper({
 function GameSelectWrapper({
   setId,
   setName,
+  studentName,
   onSelect,
   onBack,
 }: {
   setId: string;
   setName: string;
+  studentName?: string;
   onSelect: (game: string) => void;
   onBack: () => void;
 }) {
@@ -89,9 +117,12 @@ function GameSelectWrapper({
     <GameSelectPage
       setId={setId}
       setName={setName}
+      studentName={studentName}
       wordCount={set?.entries.length ?? 0}
       onSelectGame={
-        onSelect as (g: "flashcards" | "quiz" | "matching" | "spelling") => void
+        onSelect as (
+          g: "flashcards" | "quiz" | "matching" | "spelling" | "audio-spelling",
+        ) => void
       }
       onBack={onBack}
     />
@@ -99,6 +130,9 @@ function GameSelectWrapper({
 }
 
 export default function App() {
+  const [studentName, setStudentName] = useState(
+    () => sessionStorage.getItem("studentName") ?? "",
+  );
   const [view, setView] = useState<View>({ type: "home" });
 
   const goHome = () => setView({ type: "home" });
@@ -109,16 +143,42 @@ export default function App() {
   const goGame = (game: string, setId: string, setName: string) =>
     setView({ type: game as View["type"], setId, setName } as View);
 
+  // Teacher can access dashboard directly from name entry page
+  if (view.type === "teacher") {
+    return (
+      <>
+        <Toaster richColors position="top-right" />
+        <TeacherDashboard onBack={() => setView({ type: "home" })} />
+      </>
+    );
+  }
+
+  if (!studentName) {
+    return (
+      <>
+        <Toaster richColors position="top-right" />
+        <NameEntryPage
+          onEnter={(name) => setStudentName(name)}
+          onTeacher={() => setView({ type: "teacher" })}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <Toaster richColors position="top-right" />
       {view.type === "home" && (
-        <HomePage onPlay={(id, name) => goGameSelect(id, name)} />
+        <HomePage
+          onPlay={(id, name) => goGameSelect(id, name)}
+          onTeacher={() => setView({ type: "teacher" })}
+        />
       )}
       {view.type === "game-select" && (
         <GameSelectWrapper
           setId={view.setId}
           setName={view.setName}
+          studentName={studentName}
           onSelect={(game) => goGame(game, view.setId, view.setName)}
           onBack={goHome}
         />
@@ -126,7 +186,8 @@ export default function App() {
       {(view.type === "flashcards" ||
         view.type === "quiz" ||
         view.type === "matching" ||
-        view.type === "spelling") && (
+        view.type === "spelling" ||
+        view.type === "audio-spelling") && (
         <GameWrapper
           view={view}
           onBack={() =>

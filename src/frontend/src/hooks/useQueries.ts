@@ -75,3 +75,64 @@ export function useDeleteVocabSet() {
     },
   });
 }
+
+export function useListGameResults() {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["gameResults"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.listGameResults();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useRecordGameResult() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      studentName,
+      setId,
+      setName,
+      gameType,
+      score,
+      total,
+    }: {
+      studentName: string;
+      setId: string;
+      setName: string;
+      gameType: string;
+      score: bigint;
+      total: bigint;
+    }) => {
+      if (!actor) throw new Error("No actor");
+      return actor.recordGameResult(
+        studentName,
+        setId,
+        setName,
+        gameType,
+        score,
+        total,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["gameResults"] });
+    },
+  });
+}
+
+export function useClearGameResults() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("No actor");
+      return actor.clearGameResults();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["gameResults"] });
+    },
+  });
+}

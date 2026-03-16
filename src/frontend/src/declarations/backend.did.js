@@ -16,8 +16,18 @@ export const VocabSet = IDL.Record({
   'name' : IDL.Text,
   'entries' : IDL.Vec(VocabEntry),
 });
+export const GameResult = IDL.Record({
+  'setName' : IDL.Text,
+  'total' : IDL.Nat,
+  'studentName' : IDL.Text,
+  'score' : IDL.Nat,
+  'setId' : IDL.Text,
+  'timestamp' : IDL.Int,
+  'gameType' : IDL.Text,
+});
 
 export const idlService = IDL.Service({
+  'clearGameResults' : IDL.Func([], [], []),
   'createVocabSet' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Vec(VocabEntry)],
       [],
@@ -25,10 +35,16 @@ export const idlService = IDL.Service({
     ),
   'deleteVocabSet' : IDL.Func([IDL.Text], [], []),
   'getVocabSet' : IDL.Func([IDL.Text], [VocabSet], ['query']),
+  'listGameResults' : IDL.Func([], [IDL.Vec(GameResult)], ['query']),
   'listVocabSets' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))],
       ['query'],
+    ),
+  'recordGameResult' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat],
+      [],
+      [],
     ),
   'updateVocabSet' : IDL.Func([IDL.Text, IDL.Vec(VocabEntry)], [], []),
 });
@@ -41,8 +57,18 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'entries' : IDL.Vec(VocabEntry),
   });
+  const GameResult = IDL.Record({
+    'setName' : IDL.Text,
+    'total' : IDL.Nat,
+    'studentName' : IDL.Text,
+    'score' : IDL.Nat,
+    'setId' : IDL.Text,
+    'timestamp' : IDL.Int,
+    'gameType' : IDL.Text,
+  });
   
   return IDL.Service({
+    'clearGameResults' : IDL.Func([], [], []),
     'createVocabSet' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Vec(VocabEntry)],
         [],
@@ -50,10 +76,16 @@ export const idlFactory = ({ IDL }) => {
       ),
     'deleteVocabSet' : IDL.Func([IDL.Text], [], []),
     'getVocabSet' : IDL.Func([IDL.Text], [VocabSet], ['query']),
+    'listGameResults' : IDL.Func([], [IDL.Vec(GameResult)], ['query']),
     'listVocabSets' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))],
         ['query'],
+      ),
+    'recordGameResult' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat],
+        [],
+        [],
       ),
     'updateVocabSet' : IDL.Func([IDL.Text, IDL.Vec(VocabEntry)], [], []),
   });

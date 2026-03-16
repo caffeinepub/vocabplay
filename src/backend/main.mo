@@ -1,8 +1,12 @@
 import Array "mo:core/Array";
+import List "mo:core/List";
 import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
+import Time "mo:core/Time";
+
+
 
 actor {
   type VocabEntry = {
@@ -15,35 +19,35 @@ actor {
     entries : [VocabEntry];
   };
 
-  let vocabSets = Map.empty<Text, VocabSet>();
+  type GameResult = {
+    studentName : Text;
+    setId : Text;
+    setName : Text;
+    gameType : Text;
+    score : Nat;
+    total : Nat;
+    timestamp : Int;
+  };
 
-  // Create a new vocab set
+  let vocabSets = Map.empty<Text, VocabSet>();
+  let gameResults = List.empty<GameResult>();
+
   public shared ({ caller }) func createVocabSet(id : Text, name : Text, entries : [VocabEntry]) : async () {
     if (vocabSets.containsKey(id)) {
       Runtime.trap("Vocab set with this id already exists");
     };
-    let newSet : VocabSet = {
-      name;
-      entries;
-    };
-    vocabSets.add(id, newSet);
+    vocabSets.add(id, { name; entries });
   };
 
-  // Update a vocab set's entries
   public shared ({ caller }) func updateVocabSet(id : Text, entries : [VocabEntry]) : async () {
     switch (vocabSets.get(id)) {
       case (null) { Runtime.trap("Vocab set does not exist") };
       case (?existingSet) {
-        let updatedSet : VocabSet = {
-          name = existingSet.name;
-          entries;
-        };
-        vocabSets.add(id, updatedSet);
+        vocabSets.add(id, { name = existingSet.name; entries });
       };
     };
   };
 
-  // Delete a vocab set
   public shared ({ caller }) func deleteVocabSet(id : Text) : async () {
     if (not vocabSets.containsKey(id)) {
       Runtime.trap("Vocab set does not exist");
@@ -60,5 +64,26 @@ actor {
       case (null) { Runtime.trap("Vocab set does not exist") };
       case (?set) { set };
     };
+  };
+
+  public shared ({ caller }) func recordGameResult(studentName : Text, setId : Text, setName : Text, gameType : Text, score : Nat, total : Nat) : async () {
+    let result : GameResult = {
+      studentName;
+      setId;
+      setName;
+      gameType;
+      score;
+      total;
+      timestamp = Time.now();
+    };
+    gameResults.add(result);
+  };
+
+  public query ({ caller }) func listGameResults() : async [GameResult] {
+    gameResults.toArray().reverse();
+  };
+
+  public shared ({ caller }) func clearGameResults() : async () {
+    gameResults.clear();
   };
 };

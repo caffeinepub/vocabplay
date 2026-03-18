@@ -3,11 +3,9 @@ import { useState } from "react";
 import type { VocabEntry } from "./backend.d";
 import { useGetVocabSet } from "./hooks/useQueries";
 import { AudioSpellingGame } from "./pages/AudioSpellingGame";
-import { FlashcardsGame } from "./pages/FlashcardsGame";
 import { GameSelectPage } from "./pages/GameSelectPage";
 import { HomePage } from "./pages/HomePage";
-import { MatchingGame } from "./pages/MatchingGame";
-import { MultipleChoiceGame } from "./pages/MultipleChoiceGame";
+import { ListenChooseGame } from "./pages/ListenChooseGame";
 import { NameEntryPage } from "./pages/NameEntryPage";
 import { SpellingBeeGame } from "./pages/SpellingBeeGame";
 import { TeacherDashboard } from "./pages/TeacherDashboard";
@@ -16,11 +14,9 @@ type View =
   | { type: "home" }
   | { type: "teacher" }
   | { type: "game-select"; setId: string; setName: string }
-  | { type: "flashcards"; setId: string; setName: string }
-  | { type: "quiz"; setId: string; setName: string }
-  | { type: "matching"; setId: string; setName: string }
   | { type: "spelling"; setId: string; setName: string }
-  | { type: "audio-spelling"; setId: string; setName: string };
+  | { type: "audio-spelling"; setId: string; setName: string }
+  | { type: "listen-choose"; setId: string; setName: string };
 
 function GameWrapper({
   view,
@@ -46,33 +42,6 @@ function GameWrapper({
     );
   }
 
-  if (view.type === "flashcards")
-    return (
-      <FlashcardsGame
-        entries={entries}
-        setId={view.setId}
-        setName={view.setName}
-        onBack={onBack}
-      />
-    );
-  if (view.type === "quiz")
-    return (
-      <MultipleChoiceGame
-        entries={entries}
-        setId={view.setId}
-        setName={view.setName}
-        onBack={onBack}
-      />
-    );
-  if (view.type === "matching")
-    return (
-      <MatchingGame
-        entries={entries}
-        setId={view.setId}
-        setName={view.setName}
-        onBack={onBack}
-      />
-    );
   if (view.type === "spelling")
     return (
       <SpellingBeeGame
@@ -85,6 +54,15 @@ function GameWrapper({
   if (view.type === "audio-spelling")
     return (
       <AudioSpellingGame
+        entries={entries}
+        setId={view.setId}
+        setName={view.setName}
+        onBack={onBack}
+      />
+    );
+  if (view.type === "listen-choose")
+    return (
+      <ListenChooseGame
         entries={entries}
         setId={view.setId}
         setName={view.setName}
@@ -121,9 +99,7 @@ function GameSelectWrapper({
       wordCount={entries.length}
       hasDefinitions={hasDefinitions}
       onSelectGame={
-        onSelect as (
-          g: "flashcards" | "quiz" | "matching" | "spelling" | "audio-spelling",
-        ) => void
+        onSelect as (g: "spelling" | "audio-spelling" | "listen-choose") => void
       }
       onBack={onBack}
     />
@@ -181,11 +157,9 @@ export default function App() {
           onBack={goHome}
         />
       )}
-      {(view.type === "flashcards" ||
-        view.type === "quiz" ||
-        view.type === "matching" ||
-        view.type === "spelling" ||
-        view.type === "audio-spelling") && (
+      {(view.type === "spelling" ||
+        view.type === "audio-spelling" ||
+        view.type === "listen-choose") && (
         <GameWrapper
           view={view}
           onBack={() =>

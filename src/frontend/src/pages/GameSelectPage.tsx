@@ -1,21 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowLeft,
-  HelpCircle,
-  Layers,
-  Mic,
-  Shuffle,
-  Volume2,
-} from "lucide-react";
+import { ArrowLeft, CheckSquare, Mic, Volume2 } from "lucide-react";
 import { motion } from "motion/react";
 
-type GameType =
-  | "flashcards"
-  | "quiz"
-  | "matching"
-  | "spelling"
-  | "audio-spelling";
+type GameType = "spelling" | "audio-spelling" | "listen-choose";
 
 interface GameSelectPageProps {
   setId: string;
@@ -29,48 +17,9 @@ interface GameSelectPageProps {
 
 const games = [
   {
-    id: "flashcards" as GameType,
-    title: "Flashcards",
-    description: "Flip cards to learn word definitions at your own pace",
-    emoji: "🃏",
-    color: "from-cyan-400/25 to-teal-400/25",
-    border: "border-cyan-300",
-    icon: Layers,
-    iconColor: "text-cyan-600",
-    bg: "bg-cyan-50",
-    ocid: "game_select.flashcard_button",
-    requiresDefinitions: true,
-  },
-  {
-    id: "quiz" as GameType,
-    title: "Multiple Choice",
-    description: "Test your knowledge by picking the right definition",
-    emoji: "🎯",
-    color: "from-green-400/25 to-emerald-400/25",
-    border: "border-green-300",
-    icon: HelpCircle,
-    iconColor: "text-green-600",
-    bg: "bg-green-50",
-    ocid: "game_select.quiz_button",
-    requiresDefinitions: true,
-  },
-  {
-    id: "matching" as GameType,
-    title: "Matching",
-    description: "Match words with their definitions as fast as you can",
-    emoji: "🧩",
-    color: "from-violet-400/25 to-purple-400/25",
-    border: "border-violet-300",
-    icon: Shuffle,
-    iconColor: "text-violet-600",
-    bg: "bg-violet-50",
-    ocid: "game_select.matching_button",
-    requiresDefinitions: true,
-  },
-  {
     id: "spelling" as GameType,
     title: "Spelling Bee",
-    description: "Hear the word and type the correct spelling",
+    description: "Read the definition and type the correct spelling",
     emoji: "🐝",
     color: "from-orange-400/25 to-amber-400/25",
     border: "border-orange-300",
@@ -78,11 +27,10 @@ const games = [
     iconColor: "text-orange-600",
     bg: "bg-orange-50",
     ocid: "game_select.spelling_button",
-    requiresDefinitions: false,
   },
   {
     id: "audio-spelling" as GameType,
-    title: "Audio Spelling",
+    title: "Listen & Fill",
     description: "Listen to the word and type the correct spelling",
     emoji: "🔊",
     color: "from-pink-400/25 to-rose-400/25",
@@ -91,22 +39,28 @@ const games = [
     iconColor: "text-pink-600",
     bg: "bg-pink-50",
     ocid: "game_select.audio_spelling_button",
-    requiresDefinitions: true,
+  },
+  {
+    id: "listen-choose" as GameType,
+    title: "Listen & Choose",
+    description: "Listen to the audio and pick the right word from 4 options",
+    emoji: "🎯",
+    color: "from-sky-400/25 to-blue-400/25",
+    border: "border-sky-300",
+    icon: CheckSquare,
+    iconColor: "text-sky-600",
+    bg: "bg-sky-50",
+    ocid: "game_select.listen_choose_button",
   },
 ];
 
 export function GameSelectPage({
   setName,
   wordCount,
-  hasDefinitions,
   studentName,
   onSelectGame,
   onBack,
 }: GameSelectPageProps) {
-  const visibleGames = hasDefinitions
-    ? games
-    : games.filter((g) => !g.requiresDefinitions);
-
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 backdrop-blur-sm bg-background/90 border-b border-border">
@@ -157,7 +111,7 @@ export function GameSelectPage({
           )}
         </motion.div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {visibleGames.map((game, i) => {
+          {games.map((game, i) => {
             const Icon = game.icon;
             const disabled = wordCount < 2;
             return (

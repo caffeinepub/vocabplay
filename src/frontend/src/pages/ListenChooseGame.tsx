@@ -1,57 +1,59 @@
 import { SoundToggle } from "@/components/SoundToggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Eye, RotateCcw, Volume2 } from "lucide-react";
+import { ArrowLeft, RotateCcw, Volume2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { VocabEntry } from "../backend.d";
 import { useRecordGameResult } from "../hooks/useQueries";
 import { useSoundToggle } from "../hooks/useSoundToggle";
 import { shuffleArray } from "../utils/parseVocab";
 import { playCorrect, playWrong } from "../utils/soundEffects";
 
-interface AudioSpellingGameProps {
+interface ListenChooseGameProps {
   entries: VocabEntry[];
   setId: string;
   setName: string;
+  studentName?: string;
   onBack: () => void;
 }
 
-function speakWord(word: string) {
+function speakWord(word: string, rate = 1) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(word);
   utterance.lang = "en-US";
-  utterance.rate = 0.85;
+  utterance.rate = rate;
   window.speechSynthesis.speak(utterance);
 }
 
-function getWordHint(word: string): string {
-  if (word.length <= 2) return word.split("").join(" ");
-  const chars = word.split("");
-  const hinted = chars.map((c, i) => {
-    if (i === 0 || i === chars.length - 1) return c;
-    return "_";
-  });
-  return hinted.join(" ");
+function buildChoices(
+  entries: VocabEntry[],
+  targetIndex: number,
+  allEntries: VocabEntry[],
+): string[] {
+  const target = entries[targetIndex].word;
+  const distractors = allEntries
+    .filter((e) => e.word !== target)
+    .map((e) => e.word);
+  const shuffledDistractors = shuffleArray(distractors).slice(0, 3);
+  return shuffleArray([target, ...shuffledDistractors]);
 }
 
-export function AudioSpellingGame({
+export function ListenChooseGame({
   entries,
   setId,
   setName,
   onBack,
-}: AudioSpellingGameProps) {
+}: ListenChooseGameProps) {
   const [shuffled] = useState(() => shuffleArray(entries));
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [input, setInput] = useState("");
-  const [feedback, setFeedback] = useState<
-    "correct" | "wrong" | "revealed" | null
-  >(null);
+  const [choices, setChoices] = useState<string[]>(() =>
+    buildChoices(shuffled, 0, entries),
+  );
+  const [selected, setSelected] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const [muted, toggleMute] = useSoundToggle();
   const [recorded, setRecorded] = useState(false);
   const recordMutation = useRecordGameResult();
@@ -60,11 +62,13 @@ export function AudioSpellingGame({
   const progress = (currentIndex / shuffled.length) * 100;
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      speakWord(current.word);
-    }, 300);
+    const timeout = setTimeout(() => speakWord(current.word), 300);
     return () => clearTimeout(timeout);
   }, [current.word]);
+
+  useEffect(() => {
+    setChoices(buildChoices(shuffled, currentIndex, entries));
+  }, [currentIndex, shuffled, entries]);
 
   useEffect(() => {
     if (finished && !recorded) {
@@ -73,7 +77,7 @@ export function AudioSpellingGame({
         studentName,
         setId,
         setName,
-        gameType: "Listen & Fill",
+        gameType: "Listen & Choose",
         score: BigInt(score),
         total: BigInt(shuffled.length),
       });
@@ -89,50 +93,35 @@ export function AudioSpellingGame({
     recordMutation.mutate,
   ]);
 
-  const handleSubmit = () => {
-    if (!input.trim() || feedback) return;
-    const isCorrect = input.trim().toLowerCase() === current.word.toLowerCase();
-    setFeedback(isCorrect ? "correct" : "wrong");
+  const handleChoice = (word: string) => {
+    if (selected) return;
+    setSelected(word);
+    const isCorrect = word === current.word;
     if (isCorrect) {
       setScore((s) => s + 1);
       if (!muted) playCorrect();
     } else {
       if (!muted) playWrong();
     }
-    setTimeout(() => {
-      if (currentIndex + 1 >= shuffled.length) {
-        setFinished(true);
-      } else {
-        setCurrentIndex((i) => i + 1);
-        setInput("");
-        setFeedback(null);
-        inputRef.current?.focus();
-      }
-    }, 1200);
   };
 
-  const handleReveal = () => {
-    setFeedback("revealed");
-    setTimeout(() => {
-      if (currentIndex + 1 >= shuffled.length) {
-        setFinished(true);
-      } else {
-        setCurrentIndex((i) => i + 1);
-        setInput("");
-        setFeedback(null);
-        inputRef.current?.focus();
-      }
-    }, 1800);
+  const handleNext = () => {
+    if (currentIndex + 1 >= shuffled.length) {
+      setFinished(true);
+    } else {
+      setCurrentIndex((i) => i + 1);
+      setSelected(null);
+    }
   };
 
   const handleRestart = () => {
     setCurrentIndex(0);
-    setInput("");
-    setFeedback(null);
+    setSelected(null);
     setScore(0);
     setFinished(false);
     setRecorded(false);
   };
+
   const scorePercent = Math.round((score / shuffled.length) * 100);
 
   if (finished) {
@@ -144,10 +133,10 @@ export function AudioSpellingGame({
           className="max-w-md w-full bg-card rounded-3xl border-2 border-border shadow-game p-8 text-center"
         >
           <div className="text-6xl mb-4">
-            {scorePercent >= 80 ? "🔊" : scorePercent >= 50 ? "👏" : "💪"}
+            {scorePercent >= 80 ? "🎯" : scorePercent >= 50 ? "👏" : "💪"}
           </div>
           <h2 className="font-display font-extrabold text-3xl mb-1">
-            Listen &amp; Fill Done!
+            Listen &amp; Choose Done!
           </h2>
           <p className="text-muted-foreground mb-6">{setName}</p>
           <div className="bg-primary/10 rounded-2xl p-6 mb-6">
@@ -160,14 +149,14 @@ export function AudioSpellingGame({
           </div>
           <div className="flex flex-col gap-3">
             <Button
-              data-ocid="audio_spelling_results.replay_button"
+              data-ocid="listen_choose_results.replay_button"
               onClick={handleRestart}
               className="w-full gap-2 font-semibold"
             >
               <RotateCcw className="h-4 w-4" /> Try Again
             </Button>
             <Button
-              data-ocid="audio_spelling_results.back_button"
+              data-ocid="listen_choose_results.back_button"
               variant="ghost"
               onClick={onBack}
               className="w-full gap-2"
@@ -178,21 +167,6 @@ export function AudioSpellingGame({
         </motion.div>
       </div>
     );
-  }
-
-  let feedbackBg = "";
-  let feedbackText = "";
-  if (feedback === "correct") {
-    feedbackBg = "bg-success/15 border-success";
-    feedbackText = "Correct! 🎉";
-  }
-  if (feedback === "wrong") {
-    feedbackBg = "bg-destructive/10 border-destructive";
-    feedbackText = `Incorrect. The answer is "${current.word}"`;
-  }
-  if (feedback === "revealed") {
-    feedbackBg = "bg-secondary border-secondary-foreground/20";
-    feedbackText = `The word is "${current.word}"`;
   }
 
   return (
@@ -209,7 +183,7 @@ export function AudioSpellingGame({
           </Button>
           <div className="flex-1">
             <div className="flex items-center justify-between text-sm mb-1">
-              <span className="font-semibold">🔊 Listen &amp; Fill</span>
+              <span className="font-semibold">🎯 Listen &amp; Choose</span>
               <span className="text-muted-foreground">
                 {currentIndex + 1} / {shuffled.length}
               </span>
@@ -219,6 +193,7 @@ export function AudioSpellingGame({
           <SoundToggle muted={muted} onToggle={toggleMute} />
         </div>
       </header>
+
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         <AnimatePresence mode="wait">
           <motion.div
@@ -229,85 +204,107 @@ export function AudioSpellingGame({
             transition={{ duration: 0.2 }}
           >
             <div className="bg-card border-2 border-border rounded-3xl p-8 text-center shadow-game space-y-6">
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Listen &amp; Fill
+                  Listen &amp; Choose
                 </p>
                 <p className="font-body text-lg text-muted-foreground">
-                  Listen and spell the word
+                  Which word did you hear?
                 </p>
               </div>
-              <motion.button
-                data-ocid="audio_spelling.replay_button"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => speakWord(current.word)}
-                className="flex flex-col items-center gap-2 group mx-auto"
-              >
-                <div className="w-24 h-24 rounded-full bg-pink-100 border-2 border-pink-300 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-                  <Volume2 className="h-10 w-10 text-pink-600" />
-                </div>
-                <span className="text-xs font-semibold text-pink-600">
-                  Tap to hear again
-                </span>
-              </motion.button>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">
-                  Fill in the word:
-                </p>
-                <p className="text-3xl font-mono tracking-widest font-bold">
-                  {getWordHint(current.word)}
-                </p>
+              <div className="flex flex-col items-center gap-3">
+                <motion.button
+                  data-ocid="listen_choose.replay_button"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => speakWord(current.word)}
+                  className="flex flex-col items-center gap-2 group"
+                >
+                  <div className="w-24 h-24 rounded-full bg-sky-100 border-2 border-sky-300 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                    <Volume2 className="h-10 w-10 text-sky-600" />
+                  </div>
+                  <span className="text-xs font-semibold text-sky-600">
+                    Tap to hear again
+                  </span>
+                </motion.button>
+                <Button
+                  data-ocid="listen_choose.slow_button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => speakWord(current.word, 0.5)}
+                  className="text-xs gap-1.5"
+                >
+                  🐢 Slow
+                </Button>
               </div>
             </div>
           </motion.div>
         </AnimatePresence>
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <Input
-              ref={inputRef}
-              data-ocid="audio_spelling.input"
-              placeholder="Type the word you heard..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              disabled={!!feedback}
-              className={`flex-1 text-lg font-semibold h-12 ${feedback === "correct" ? "border-success" : feedback === "wrong" ? "border-destructive" : ""}`}
-              autoFocus
-            />
-            <Button
-              data-ocid="audio_spelling.submit_button"
-              onClick={handleSubmit}
-              disabled={!input.trim() || !!feedback}
-              className="h-12 px-5 font-semibold"
-            >
-              Check
-            </Button>
-          </div>
-          {!feedback && (
-            <Button
-              data-ocid="audio_spelling.reveal_button"
-              variant="ghost"
-              size="sm"
-              onClick={handleReveal}
-              className="text-muted-foreground gap-1.5 text-xs"
-            >
-              <Eye className="h-3.5 w-3.5" /> Reveal answer
-            </Button>
-          )}
-          <AnimatePresence>
-            {feedback && (
+
+        <div className="grid grid-cols-2 gap-3">
+          {choices.map((word, i) => {
+            const isSelected = selected === word;
+            const isCorrect = word === current.word;
+            let variant: "default" | "outline" = "outline";
+            let extraClass = "h-14 text-base font-semibold transition-all";
+            if (selected) {
+              if (isCorrect)
+                extraClass +=
+                  " bg-success/20 border-success text-success-foreground border-2";
+              else if (isSelected)
+                extraClass +=
+                  " bg-destructive/20 border-destructive text-destructive border-2";
+            }
+            return (
               <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className={`rounded-xl border-2 px-4 py-3 text-sm font-semibold ${feedbackBg}`}
+                key={`${currentIndex}-${word}`}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.06 }}
               >
-                {feedbackText}
+                <Button
+                  data-ocid={`listen_choose.choice_button.${i + 1}`}
+                  variant={variant}
+                  className={`w-full ${extraClass}`}
+                  onClick={() => handleChoice(word)}
+                  disabled={!!selected}
+                >
+                  {word}
+                </Button>
               </motion.div>
-            )}
-          </AnimatePresence>
+            );
+          })}
         </div>
+
+        {selected && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-3"
+          >
+            <div
+              className={`rounded-xl border-2 px-4 py-3 text-sm font-semibold ${
+                selected === current.word
+                  ? "bg-success/15 border-success"
+                  : "bg-destructive/10 border-destructive"
+              }`}
+            >
+              {selected === current.word
+                ? "Correct! 🎉"
+                : `Incorrect. The word was "${current.word}"`}
+            </div>
+            <Button
+              data-ocid="listen_choose.next_button"
+              onClick={handleNext}
+              className="w-full font-semibold"
+            >
+              {currentIndex + 1 >= shuffled.length
+                ? "See Results"
+                : "Next Word"}
+            </Button>
+          </motion.div>
+        )}
+
         <div className="text-center text-sm text-muted-foreground">
           Score: <span className="font-bold text-primary">{score}</span> /{" "}
           {currentIndex}

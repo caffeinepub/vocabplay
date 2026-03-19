@@ -65,7 +65,11 @@ export function VocabModal({ open, onClose, editId }: VocabModalProps) {
     setSaveError(null);
     try {
       if (isEditing && editId) {
-        await updateMutation.mutateAsync({ id: editId, entries: parsed });
+        await updateMutation.mutateAsync({
+          id: editId,
+          name: name.trim(),
+          entries: parsed,
+        });
       } else {
         await createMutation.mutateAsync({
           id: generateId(),

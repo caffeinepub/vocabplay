@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, RotateCcw, Volume2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { VocabEntry } from "../backend.d";
-import { useRecordGameResult } from "../hooks/useQueries";
+import { useAddStudentSticker, useRecordGameResult } from "../hooks/useQueries";
 import { useSoundToggle } from "../hooks/useSoundToggle";
 import { shuffleArray } from "../utils/parseVocab";
-import { playCorrect, playWrong } from "../utils/soundEffects";
+import { playCorrect, playFinish, playWrong } from "../utils/soundEffects";
 
 interface ListenChooseGameProps {
   entries: VocabEntry[];
@@ -16,6 +16,7 @@ interface ListenChooseGameProps {
   setName: string;
   studentName?: string;
   onBack: () => void;
+  onViewStickers?: () => void;
 }
 
 function speakWord(word: string, rate = 1) {
@@ -40,11 +41,19 @@ function buildChoices(
   return shuffleArray([target, ...shuffledDistractors]);
 }
 
+function pickSticker(pct: number): string {
+  if (pct >= 90) return "🏆";
+  if (pct >= 70) return "⭐";
+  if (pct >= 50) return "🌸";
+  return "🌱";
+}
+
 export function ListenChooseGame({
   entries,
   setId,
   setName,
   onBack,
+  onViewStickers,
 }: ListenChooseGameProps) {
   const [shuffled] = useState(() => shuffleArray(entries));
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,10 +65,15 @@ export function ListenChooseGame({
   const [finished, setFinished] = useState(false);
   const [muted, toggleMute] = useSoundToggle();
   const [recorded, setRecorded] = useState(false);
+  const stickerAdded = useRef(false);
   const recordMutation = useRecordGameResult();
+  const addStickerMutation = useAddStudentSticker();
+  const addStickerMutate = addStickerMutation.mutate;
 
   const current = shuffled[currentIndex];
   const progress = (currentIndex / shuffled.length) * 100;
+  const scorePercent = Math.round((score / shuffled.length) * 100);
+  const earnedSticker = pickSticker(scorePercent);
 
   useEffect(() => {
     const timeout = setTimeout(() => speakWord(current.word), 300);
@@ -93,6 +107,18 @@ export function ListenChooseGame({
     recordMutation.mutate,
   ]);
 
+  useEffect(() => {
+    if (finished && !stickerAdded.current) {
+      stickerAdded.current = true;
+      if (!muted) playFinish();
+      const name = sessionStorage.getItem("studentName");
+      const password = sessionStorage.getItem("studentPassword");
+      if (name && password) {
+        addStickerMutate({ name, password, sticker: earnedSticker });
+      }
+    }
+  }, [finished, muted, earnedSticker, addStickerMutate]);
+
   const handleChoice = (word: string) => {
     if (selected) return;
     setSelected(word);
@@ -120,9 +146,8 @@ export function ListenChooseGame({
     setScore(0);
     setFinished(false);
     setRecorded(false);
+    stickerAdded.current = false;
   };
-
-  const scorePercent = Math.round((score / shuffled.length) * 100);
 
   if (finished) {
     return (
@@ -139,7 +164,7 @@ export function ListenChooseGame({
             Listen &amp; Choose Done!
           </h2>
           <p className="text-muted-foreground mb-6">{setName}</p>
-          <div className="bg-primary/10 rounded-2xl p-6 mb-6">
+          <div className="bg-primary/10 rounded-2xl p-6 mb-4">
             <div className="font-display font-bold text-5xl text-primary">
               {scorePercent}%
             </div>
@@ -147,7 +172,35 @@ export function ListenChooseGame({
               {score} / {shuffled.length} correct
             </div>
           </div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{
+              delay: 0.4,
+              type: "spring",
+              stiffness: 300,
+              damping: 15,
+            }}
+            className="bg-gradient-to-br from-yellow-100 to-orange-100 border-2 border-yellow-300 rounded-2xl p-4 mb-6"
+          >
+            <p className="text-sm font-semibold text-yellow-700 mb-1">
+              You earned a sticker!
+            </p>
+            <div className="text-7xl">{earnedSticker}</div>
+          </motion.div>
+
           <div className="flex flex-col gap-3">
+            {onViewStickers && (
+              <Button
+                data-ocid="listen_choose_results.view_stickers_button"
+                onClick={onViewStickers}
+                variant="outline"
+                className="w-full gap-2 font-semibold border-2 border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+              >
+                🌟 See My Stickers
+              </Button>
+            )}
             <Button
               data-ocid="listen_choose_results.replay_button"
               onClick={handleRestart}

@@ -8,6 +8,8 @@ import { useGetVocabSet, useListVocabSets } from "../hooks/useQueries";
 interface HomePageProps {
   onPlay: (id: string, name: string) => void;
   onTeacher: () => void;
+  onViewStickers?: () => void;
+  onViewProgress?: () => void;
 }
 
 function SetCard({
@@ -75,7 +77,12 @@ function SetCard({
   );
 }
 
-export function HomePage({ onPlay, onTeacher }: HomePageProps) {
+export function HomePage({
+  onPlay,
+  onTeacher,
+  onViewStickers,
+  onViewProgress,
+}: HomePageProps) {
   const { data: sets, isLoading } = useListVocabSets();
 
   return (
@@ -90,7 +97,29 @@ export function HomePage({ onPlay, onTeacher }: HomePageProps) {
               Listen <span className="text-primary">&amp; Spell</span>
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {onViewStickers && (
+              <Button
+                data-ocid="home.stickers_button"
+                variant="ghost"
+                size="sm"
+                onClick={onViewStickers}
+                className="gap-1 text-sm font-semibold text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+              >
+                🌟 Stickers
+              </Button>
+            )}
+            {onViewProgress && (
+              <Button
+                data-ocid="home.progress_button"
+                variant="ghost"
+                size="sm"
+                onClick={onViewProgress}
+                className="gap-1 text-sm font-semibold text-sky-600 hover:text-sky-700 hover:bg-sky-50"
+              >
+                📊 Progress
+              </Button>
+            )}
             <Button
               data-ocid="home.teacher_button"
               variant="ghost"

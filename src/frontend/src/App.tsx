@@ -1,13 +1,19 @@
 import { Toaster } from "@/components/ui/sonner";
 import { useState } from "react";
-import type { VocabEntry } from "./backend.d";
-import { useGetVocabSet } from "./hooks/useQueries";
+import type { GameResult, VocabEntry } from "./backend.d";
+import {
+  useGetStudentGameResults,
+  useGetStudentStickers,
+  useGetVocabSet,
+} from "./hooks/useQueries";
+import { AccountPage } from "./pages/AccountPage";
 import { AudioSpellingGame } from "./pages/AudioSpellingGame";
 import { GameSelectPage } from "./pages/GameSelectPage";
 import { HomePage } from "./pages/HomePage";
 import { ListenChooseGame } from "./pages/ListenChooseGame";
-import { NameEntryPage } from "./pages/NameEntryPage";
+import { ProgressPage } from "./pages/ProgressPage";
 import { SpellingBeeGame } from "./pages/SpellingBeeGame";
+import { StickerCollectionPage } from "./pages/StickerCollectionPage";
 import { TeacherDashboard } from "./pages/TeacherDashboard";
 
 type View =
@@ -16,17 +22,25 @@ type View =
   | { type: "game-select"; setId: string; setName: string }
   | { type: "spelling"; setId: string; setName: string }
   | { type: "audio-spelling"; setId: string; setName: string }
-  | { type: "listen-choose"; setId: string; setName: string };
+  | { type: "listen-choose"; setId: string; setName: string }
+  | { type: "stickers" }
+  | { type: "progress" };
 
 function GameWrapper({
   view,
   onBack,
+  onViewStickers,
 }: {
   view: Exclude<
     View,
-    { type: "home" } | { type: "teacher" } | { type: "game-select" }
+    | { type: "home" }
+    | { type: "teacher" }
+    | { type: "game-select" }
+    | { type: "stickers" }
+    | { type: "progress" }
   >;
   onBack: () => void;
+  onViewStickers: () => void;
 }) {
   const { data: set, isLoading } = useGetVocabSet(view.setId);
   const entries: VocabEntry[] = set?.entries ?? [];
@@ -49,6 +63,7 @@ function GameWrapper({
         setId={view.setId}
         setName={view.setName}
         onBack={onBack}
+        onViewStickers={onViewStickers}
       />
     );
   if (view.type === "audio-spelling")
@@ -58,6 +73,7 @@ function GameWrapper({
         setId={view.setId}
         setName={view.setName}
         onBack={onBack}
+        onViewStickers={onViewStickers}
       />
     );
   if (view.type === "listen-choose")
@@ -67,6 +83,7 @@ function GameWrapper({
         setId={view.setId}
         setName={view.setName}
         onBack={onBack}
+        onViewStickers={onViewStickers}
       />
     );
   return null;
@@ -106,34 +123,126 @@ function GameSelectWrapper({
   );
 }
 
-export default function App() {
-  const [studentName, setStudentName] = useState(
-    () => sessionStorage.getItem("studentName") ?? "",
-  );
+function StudentApp({
+  studentName,
+  studentPassword,
+}: {
+  studentName: string;
+  studentPassword: string;
+}) {
   const [view, setView] = useState<View>({ type: "home" });
+
+  const { data: stickers = [] } = useGetStudentStickers(
+    studentName,
+    studentPassword,
+  );
+  const { data: gameResults = [] } = useGetStudentGameResults(
+    studentName,
+    studentPassword,
+  );
 
   const goHome = () => setView({ type: "home" });
   const goGameSelect = (setId: string, setName: string) =>
     setView({ type: "game-select", setId, setName });
   const goGame = (game: string, setId: string, setName: string) =>
     setView({ type: game as View["type"], setId, setName } as View);
+  const goStickers = () => setView({ type: "stickers" });
+  const goProgress = () => setView({ type: "progress" });
+
+  if (view.type === "stickers") {
+    return (
+      <StickerCollectionPage stickers={stickers as string[]} onBack={goHome} />
+    );
+  }
+
+  if (view.type === "progress") {
+    return (
+      <ProgressPage
+        results={gameResults as GameResult[]}
+        studentName={studentName}
+        onBack={goHome}
+      />
+    );
+  }
+
+  if (view.type === "home") {
+    return (
+      <HomePage
+        onPlay={(id, name) => goGameSelect(id, name)}
+        onTeacher={() => setView({ type: "teacher" })}
+        onViewStickers={goStickers}
+        onViewProgress={goProgress}
+      />
+    );
+  }
 
   if (view.type === "teacher") {
+    return <TeacherDashboard onBack={goHome} />;
+  }
+
+  if (view.type === "game-select") {
+    return (
+      <GameSelectWrapper
+        setId={view.setId}
+        setName={view.setName}
+        studentName={studentName}
+        onSelect={(game) => goGame(game, view.setId, view.setName)}
+        onBack={goHome}
+      />
+    );
+  }
+
+  if (
+    view.type === "spelling" ||
+    view.type === "audio-spelling" ||
+    view.type === "listen-choose"
+  ) {
+    return (
+      <GameWrapper
+        view={view}
+        onBack={() =>
+          setView({
+            type: "game-select",
+            setId: view.setId,
+            setName: view.setName,
+          })
+        }
+        onViewStickers={goStickers}
+      />
+    );
+  }
+
+  return null;
+}
+
+export default function App() {
+  const [studentName, setStudentName] = useState(
+    () => sessionStorage.getItem("studentName") ?? "",
+  );
+  const [studentPassword, setStudentPassword] = useState(
+    () => sessionStorage.getItem("studentPassword") ?? "",
+  );
+  const [showTeacher, setShowTeacher] = useState(false);
+
+  if (showTeacher) {
     return (
       <>
         <Toaster richColors position="top-right" />
-        <TeacherDashboard onBack={() => setView({ type: "home" })} />
+        <TeacherDashboard onBack={() => setShowTeacher(false)} />
       </>
     );
   }
 
-  if (!studentName) {
+  if (!studentName || !studentPassword) {
     return (
       <>
         <Toaster richColors position="top-right" />
-        <NameEntryPage
-          onEnter={(name) => setStudentName(name)}
-          onTeacher={() => setView({ type: "teacher" })}
+        <AccountPage
+          onEnter={(name, password) => {
+            setStudentName(name);
+            setStudentPassword(password);
+          }}
+          onTeacher={() => setShowTeacher(true)}
         />
       </>
     );
@@ -142,35 +251,7 @@ export default function App() {
   return (
     <>
       <Toaster richColors position="top-right" />
-      {view.type === "home" && (
-        <HomePage
-          onPlay={(id, name) => goGameSelect(id, name)}
-          onTeacher={() => setView({ type: "teacher" })}
-        />
-      )}
-      {view.type === "game-select" && (
-        <GameSelectWrapper
-          setId={view.setId}
-          setName={view.setName}
-          studentName={studentName}
-          onSelect={(game) => goGame(game, view.setId, view.setName)}
-          onBack={goHome}
-        />
-      )}
-      {(view.type === "spelling" ||
-        view.type === "audio-spelling" ||
-        view.type === "listen-choose") && (
-        <GameWrapper
-          view={view}
-          onBack={() =>
-            setView({
-              type: "game-select",
-              setId: view.setId,
-              setName: view.setName,
-            })
-          }
-        />
-      )}
+      <StudentApp studentName={studentName} studentPassword={studentPassword} />
     </>
   );
 }

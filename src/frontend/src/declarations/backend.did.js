@@ -12,11 +12,6 @@ export const VocabEntry = IDL.Record({
   'word' : IDL.Text,
   'definition' : IDL.Text,
 });
-export const VocabSet = IDL.Record({
-  'id' : IDL.Text,
-  'name' : IDL.Text,
-  'entries' : IDL.Vec(VocabEntry),
-});
 export const GameResult = IDL.Record({
   'setName' : IDL.Text,
   'total' : IDL.Nat,
@@ -26,39 +21,57 @@ export const GameResult = IDL.Record({
   'timestamp' : IDL.Int,
   'gameType' : IDL.Text,
 });
+export const VocabSet = IDL.Record({
+  'id' : IDL.Text,
+  'name' : IDL.Text,
+  'entries' : IDL.Vec(VocabEntry),
+});
 
 export const idlService = IDL.Service({
+  'addStudentSticker' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
   'clearGameResults' : IDL.Func([], [], []),
+  'createStudentAccount' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'createVocabSet' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Vec(VocabEntry)],
       [],
       [],
     ),
   'deleteVocabSet' : IDL.Func([IDL.Text], [], []),
+  'getStudentGameResults' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Vec(GameResult)],
+      [],
+    ),
+  'getStudentStickers' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Vec(IDL.Text)],
+      [],
+    ),
   'getVocabSet' : IDL.Func([IDL.Text], [VocabSet], ['query']),
   'listGameResults' : IDL.Func([], [IDL.Vec(GameResult)], ['query']),
+  'listStudentNames' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
   'listVocabSets' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))],
       ['query'],
     ),
+  'loginStudent' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
   'recordGameResult' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat],
       [],
       [],
     ),
-  'updateVocabSet' : IDL.Func([IDL.Text, IDL.Vec(VocabEntry)], [], []),
+  'updateVocabSet' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Vec(VocabEntry)],
+      [],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
   const VocabEntry = IDL.Record({ 'word' : IDL.Text, 'definition' : IDL.Text });
-  const VocabSet = IDL.Record({
-    'id' : IDL.Text,
-    'name' : IDL.Text,
-    'entries' : IDL.Vec(VocabEntry),
-  });
   const GameResult = IDL.Record({
     'setName' : IDL.Text,
     'total' : IDL.Nat,
@@ -68,28 +81,51 @@ export const idlFactory = ({ IDL }) => {
     'timestamp' : IDL.Int,
     'gameType' : IDL.Text,
   });
+  const VocabSet = IDL.Record({
+    'id' : IDL.Text,
+    'name' : IDL.Text,
+    'entries' : IDL.Vec(VocabEntry),
+  });
   
   return IDL.Service({
+    'addStudentSticker' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
     'clearGameResults' : IDL.Func([], [], []),
+    'createStudentAccount' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'createVocabSet' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Vec(VocabEntry)],
         [],
         [],
       ),
     'deleteVocabSet' : IDL.Func([IDL.Text], [], []),
+    'getStudentGameResults' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Vec(GameResult)],
+        [],
+      ),
+    'getStudentStickers' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Vec(IDL.Text)],
+        [],
+      ),
     'getVocabSet' : IDL.Func([IDL.Text], [VocabSet], ['query']),
     'listGameResults' : IDL.Func([], [IDL.Vec(GameResult)], ['query']),
+    'listStudentNames' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
     'listVocabSets' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))],
         ['query'],
       ),
+    'loginStudent' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
     'recordGameResult' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat],
         [],
         [],
       ),
-    'updateVocabSet' : IDL.Func([IDL.Text, IDL.Vec(VocabEntry)], [], []),
+    'updateVocabSet' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Vec(VocabEntry)],
+        [],
+        [],
+      ),
   });
 };
 

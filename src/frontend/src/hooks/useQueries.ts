@@ -50,10 +50,11 @@ export function useUpdateVocabSet() {
   return useMutation({
     mutationFn: async ({
       id,
+      name,
       entries,
-    }: { id: string; entries: VocabEntry[] }) => {
+    }: { id: string; name: string; entries: VocabEntry[] }) => {
       if (!actor) throw new Error("No actor");
-      return actor.updateVocabSet(id, entries);
+      return actor.updateVocabSet(id, name, entries);
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["vocabSets"] });
@@ -134,5 +135,75 @@ export function useClearGameResults() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gameResults"] });
     },
+  });
+}
+
+export function useLoginStudent() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async ({
+      name,
+      password,
+    }: { name: string; password: string }) => {
+      if (!actor) throw new Error("No actor");
+      return actor.loginStudent(name, password);
+    },
+  });
+}
+
+export function useCreateStudentAccount() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async ({
+      name,
+      password,
+    }: { name: string; password: string }) => {
+      if (!actor) throw new Error("No actor");
+      return actor.createStudentAccount(name, password);
+    },
+  });
+}
+
+export function useAddStudentSticker() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      name,
+      password,
+      sticker,
+    }: { name: string; password: string; sticker: string }) => {
+      if (!actor) throw new Error("No actor");
+      return actor.addStudentSticker(name, password, sticker);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["studentStickers", variables.name],
+      });
+    },
+  });
+}
+
+export function useGetStudentStickers(name: string, password: string) {
+  const { actor, isFetching } = useActor();
+  return useQuery<string[]>({
+    queryKey: ["studentStickers", name],
+    queryFn: async () => {
+      if (!actor || !name || !password) return [];
+      return actor.getStudentStickers(name, password);
+    },
+    enabled: !!actor && !isFetching && !!name && !!password,
+  });
+}
+
+export function useGetStudentGameResults(name: string, password: string) {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["studentGameResults", name],
+    queryFn: async () => {
+      if (!actor || !name || !password) return [];
+      return actor.getStudentGameResults(name, password);
+    },
+    enabled: !!actor && !isFetching && !!name && !!password,
   });
 }

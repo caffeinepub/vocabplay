@@ -26,20 +26,29 @@ export interface VocabSet {
   'entries' : Array<VocabEntry>,
 }
 export interface _SERVICE {
+  'addStudentSticker' : ActorMethod<[string, string, string], undefined>,
   'clearGameResults' : ActorMethod<[], undefined>,
+  'createStudentAccount' : ActorMethod<[string, string], undefined>,
   'createVocabSet' : ActorMethod<
     [string, string, Array<VocabEntry>],
     undefined
   >,
   'deleteVocabSet' : ActorMethod<[string], undefined>,
+  'getStudentGameResults' : ActorMethod<[string, string], Array<GameResult>>,
+  'getStudentStickers' : ActorMethod<[string, string], Array<string>>,
   'getVocabSet' : ActorMethod<[string], VocabSet>,
   'listGameResults' : ActorMethod<[], Array<GameResult>>,
+  'listStudentNames' : ActorMethod<[], Array<string>>,
   'listVocabSets' : ActorMethod<[], Array<[string, string]>>,
+  'loginStudent' : ActorMethod<[string, string], boolean>,
   'recordGameResult' : ActorMethod<
     [string, string, string, string, bigint, bigint],
     undefined
   >,
-  'updateVocabSet' : ActorMethod<[string, Array<VocabEntry>], undefined>,
+  'updateVocabSet' : ActorMethod<
+    [string, string, Array<VocabEntry>],
+    undefined
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

@@ -21,10 +21,14 @@ interface SpellingBeeGameProps {
 }
 
 function pickSticker(pct: number): string {
-  if (pct >= 90) return "🏆";
-  if (pct >= 70) return "⭐";
-  if (pct >= 50) return "🌸";
-  return "🌱";
+  const pools: { min: number; stickers: string[] }[] = [
+    { min: 90, stickers: ["🏆", "🥇", "👑", "🌟", "🎖️", "💫", "🎊"] },
+    { min: 70, stickers: ["⭐", "🎯", "💎", "🦋", "🌈", "🎠", "🎵"] },
+    { min: 50, stickers: ["🌸", "🍀", "🎨", "🌺", "🦄", "🍭", "🎀"] },
+    { min: 0, stickers: ["🌱", "🌿", "🍃", "🌻", "🌼", "🌾", "🐣"] },
+  ];
+  const pool = pools.find((p) => pct >= p.min)!;
+  return pool.stickers[Math.floor(Math.random() * pool.stickers.length)];
 }
 
 export function SpellingBeeGame({
